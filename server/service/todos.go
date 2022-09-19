@@ -42,6 +42,12 @@ type Todo struct {
 	Complete bool
 }
 
+type TodoOptions struct {
+	ListId   *string
+	Title    *string
+	Complete *bool
+}
+
 type TodoList struct {
 	Id    string
 	Title string
@@ -90,27 +96,59 @@ func GetTodo(id string) (*Todo, error) {
 	return nil, errors.New(fmt.Sprintf("could not find a todo for id: %s", id))
 }
 
+func UpdateTodo(id string, options TodoOptions) (*Todo, error) {
+	todo, err := GetTodo(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if options.ListId != nil {
+		removeTodoFromList(todo)
+		todo.ListId = *options.ListId
+
+		if list, ok := service.lists[*options.ListId]; ok {
+			list.Todos = append(list.Todos, todo)
+			service.lists[*options.ListId] = list
+		} else {
+			return nil, errors.New(fmt.Sprintf("could not find a list for list id: %s", *options.ListId))
+		}
+	}
+
+	if options.Complete != nil {
+		todo.Complete = *options.Complete
+	}
+
+	if options.Title != nil {
+		todo.Title = *options.Title
+	}
+
+	return todo, nil
+}
+
 func DeleteTodo(id string) error {
 	if todo, ok := service.todos[id]; ok {
-		if list, ok := service.lists[todo.ListId]; ok {
-			for i, item := range list.Todos {
-				if item.Id == todo.Id {
-					lastIndex := len(list.Todos) - 1
-					if i != lastIndex {
-						copy(list.Todos[i:], list.Todos[i+1:])
-					}
-
-					list.Todos[lastIndex] = nil
-					list.Todos = list.Todos[:lastIndex]
-					service.lists[todo.ListId] = list
-					break
-				}
-			}
-		}
-
+		removeTodoFromList(todo)
 		delete(service.todos, id)
 		return nil
 	}
 
 	return errors.New(fmt.Sprintf("could not find a todo for id: %s", id))
+}
+
+func removeTodoFromList(todo *Todo) {
+	if list, ok := service.lists[todo.ListId]; ok {
+		for i, item := range list.Todos {
+			if item.Id == todo.Id {
+				lastIndex := len(list.Todos) - 1
+				if i != lastIndex {
+					copy(list.Todos[i:], list.Todos[i+1:])
+				}
+
+				list.Todos[lastIndex] = nil
+				list.Todos = list.Todos[:lastIndex]
+				service.lists[todo.ListId] = list
+				break
+			}
+		}
+	}
 }

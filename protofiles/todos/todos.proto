@@ -16,6 +16,12 @@ message Todo {
   bool complete = 4;
 }
 
+message TodoUpdate {
+  string listId = 1;
+  string title = 2;
+  bool complete = 3;
+}
+
 message TodoList {
   string id = 1;
   string title = 2;
@@ -38,9 +44,8 @@ message CreateTodoRequest {
 
 message UpdateTodoRequest {
   string id = 1;
-  bool complete = 2;
-  string title = 3;
-  FieldMask mask = 4;
+  TodoUpdate todo = 2;
+  FieldMask mask = 3;
 }
 
 message DeleteTodoRequest {

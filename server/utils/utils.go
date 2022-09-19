@@ -25,21 +25,27 @@ func GetValueFromPath(path string, object any) (any, error) {
 	}
 
 	paths := strings.Split(path, ".")
-	fieldName := cases.Title(language.Und).String(paths[0])
+	firstLetter := cases.Title(language.Und).String(paths[0][0:1])
+	fieldName := firstLetter + paths[0][1:]
 
-	reflectType := reflect.TypeOf(object)
 	reflectValue := reflect.ValueOf(object)
 
-	if _, ok := reflectType.FieldByName(fieldName); ok {
-		value := reflectValue.FieldByName(fieldName).Interface()
-
-		if len(paths) > 1 {
-			newPath := strings.Join(paths[1:], ".")
-			return GetValueFromPath(newPath, value)
-		}
-
-		return value, nil
+	field := reflectValue.FieldByName(fieldName)
+	if !field.IsValid() {
+		return nil, errors.New(fmt.Sprintf("Could not find a valid field for field name: %s", fieldName))
 	}
 
-	return nil, errors.New(fmt.Sprintf("Could not find a valid field for field name: %s", fieldName))
+	var value any
+	if field.Kind() == reflect.Ptr {
+		value = reflect.Indirect(field).Interface()
+	} else {
+		value = field.Interface()
+	}
+
+	if len(paths) > 1 {
+		newPath := strings.Join(paths[1:], ".")
+		return GetValueFromPath(newPath, value)
+	}
+
+	return value, nil
 }

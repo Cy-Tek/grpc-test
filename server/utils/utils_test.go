@@ -41,16 +41,37 @@ func TestGetValueFromPath(t *testing.T) {
 		{
 			name: "Handles 2 levels deep",
 			args: args{
-				path: "User.Valid",
+				path: "user.isValid",
 				object: struct {
-					User struct{ Valid bool }
+					User struct{ IsValid bool }
 				}{
 					User: struct {
-						Valid bool
-					}{Valid: true},
+						IsValid bool
+					}{IsValid: true},
 				},
 			},
 			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "Handles nested pointers to structs",
+			args: args{
+				path: "user.location.street",
+				object: struct {
+					User struct {
+						Location *testAddress
+					}
+				}{
+					User: struct {
+						Location *testAddress
+					}{
+						Location: &testAddress{
+							Street: "2008 Galaxy Drive",
+						},
+					},
+				},
+			},
+			want:    "2008 Galaxy Drive",
 			wantErr: false,
 		},
 		{

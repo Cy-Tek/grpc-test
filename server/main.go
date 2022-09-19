@@ -7,7 +7,9 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"grpc-test/protofiles/todos"
 	"grpc-test/service"
+	"grpc-test/utils"
 	"net"
+	"strings"
 )
 
 type server struct{}
@@ -64,8 +66,41 @@ func (s server) GetList(ctx context.Context, request *todos.GetListRequest) (*to
 }
 
 func (s server) UpdateTodo(ctx context.Context, request *todos.UpdateTodoRequest) (*todos.Todo, error) {
-	//TODO implement me
-	panic("implement me")
+	todoOptions := service.TodoOptions{}
+	for _, path := range request.GetMask().GetPaths() {
+		err := utils.AssignValueFromPath(path, *request, func(path string, result any) {
+			path = strings.ToLower(path)
+			if strings.Contains(path, "title") {
+				value := result.(string)
+				todoOptions.Title = &value
+			}
+
+			if strings.Contains(path, "complete") {
+				value := result.(bool)
+				todoOptions.Complete = &value
+			}
+
+			if strings.Contains(path, "listid") {
+				value := result.(string)
+				todoOptions.ListId = &value
+			}
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	todo, err := service.UpdateTodo(request.GetId(), todoOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return &todos.Todo{
+		Id:       todo.Id,
+		ListId:   todo.ListId,
+		Title:    todo.Title,
+		Complete: todo.Complete,
+	}, nil
 }
 
 func (s server) DeleteTodo(ctx context.Context, request *todos.DeleteTodoRequest) (*emptypb.Empty, error) {
