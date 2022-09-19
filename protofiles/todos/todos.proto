@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package protofiles;
+option go_package = "protofiles/todos";
+
+import "google/protobuf/empty.proto";
+
+message FieldMask {
+  repeated string paths = 1;
+}
+
+message Todo {
+  string id = 1;
+  string listId = 2;
+  string title = 3;
+  bool complete = 4;
+}
+
+message TodoList {
+  string id = 1;
+  string title = 2;
+  repeated Todo todos = 3;
+}
+
+message GetTodoRequest {
+  string id = 1;
+}
+
+message GetListRequest {
+  string id = 1;
+}
+
+message CreateTodoRequest {
+  string listId = 1;
+  string title = 3;
+  bool complete = 2;
+}
+
+message UpdateTodoRequest {
+  string id = 1;
+  bool complete = 2;
+  string title = 3;
+  FieldMask mask = 4;
+}
+
+message DeleteTodoRequest {
+  string id = 1;
+}
+
+service TodoService {
+  // unary
+  rpc CreateTodo(CreateTodoRequest) returns (Todo);
+  rpc GetTodo(GetTodoRequest) returns (Todo);
+  rpc GetList(GetListRequest) returns (TodoList);
+  rpc UpdateTodo(UpdateTodoRequest) returns (Todo);
+  rpc DeleteTodo(DeleteTodoRequest) returns (google.protobuf.Empty);
+}
