@@ -24,9 +24,9 @@ func GetValueFromPath(path string, object any) (any, error) {
 		return nil, errors.New("please pass in a string with at least 1 char")
 	}
 
-	paths := strings.Split(path, ".")
-	firstLetter := cases.Title(language.Und).String(paths[0][0:1])
-	fieldName := firstLetter + paths[0][1:]
+	fieldNames := strings.Split(path, ".")
+	firstLetter := cases.Title(language.Und).String(fieldNames[0][0:1])
+	fieldName := firstLetter + fieldNames[0][1:]
 
 	reflectValue := reflect.ValueOf(object)
 
@@ -42,8 +42,8 @@ func GetValueFromPath(path string, object any) (any, error) {
 		value = field.Interface()
 	}
 
-	if len(paths) > 1 {
-		newPath := strings.Join(paths[1:], ".")
+	if len(fieldNames) > 1 {
+		newPath := strings.Join(fieldNames[1:], ".")
 		return GetValueFromPath(newPath, value)
 	}
 
