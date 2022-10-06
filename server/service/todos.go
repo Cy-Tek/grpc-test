@@ -3,7 +3,9 @@ package service
 import (
 	"errors"
 	"fmt"
+	"github.com/Cy-Tek/pbupdate"
 	"github.com/google/uuid"
+	"grpc-test/protofiles/todos"
 )
 
 var (
@@ -36,16 +38,10 @@ func init() {
 }
 
 type Todo struct {
-	Id       string
-	ListId   string
-	Title    string
-	Complete bool
-}
-
-type TodoOptions struct {
-	ListId   *string
-	Title    *string
-	Complete *bool
+	Id       string `json:"id"`
+	ListId   string `json:"listId"`
+	Title    string `json:"title"`
+	Complete bool   `json:"complete"`
 }
 
 type TodoList struct {
@@ -96,33 +92,29 @@ func GetTodo(id string) (*Todo, error) {
 	return nil, errors.New(fmt.Sprintf("could not find a todo for id: %s", id))
 }
 
-func UpdateTodo(id string, options TodoOptions) (*Todo, error) {
+func UpdateTodo(id string, paths []string, reqTodo *todos.TodoUpdate) (*Todo, error) {
 	todo, err := GetTodo(id)
 	if err != nil {
 		return nil, err
 	}
 
-	if options.ListId != nil {
+	if len(reqTodo.ListId) > 0 {
 		removeTodoFromList(todo)
-		todo.ListId = *options.ListId
-
-		if list, ok := service.lists[*options.ListId]; ok {
-			list.Todos = append(list.Todos, todo)
-			service.lists[*options.ListId] = list
-		} else {
-			return nil, errors.New(fmt.Sprintf("could not find a list for list id: %s", *options.ListId))
-		}
 	}
 
-	if options.Complete != nil {
-		todo.Complete = *options.Complete
+	newTodo, err := pbupdate.CopyValuesFromPaths(paths, reqTodo, *todo)
+	if err != nil {
+		return nil, err
 	}
 
-	if options.Title != nil {
-		todo.Title = *options.Title
+	if list, ok := service.lists[newTodo.ListId]; ok {
+		list.Todos = append(list.Todos, newTodo)
+		service.lists[newTodo.ListId] = list
+	} else {
+		return nil, errors.New(fmt.Sprintf("could not find a list for list id: %s", newTodo.ListId))
 	}
 
-	return todo, nil
+	return newTodo, nil
 }
 
 func DeleteTodo(id string) error {
